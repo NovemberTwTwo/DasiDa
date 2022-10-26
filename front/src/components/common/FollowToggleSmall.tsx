@@ -63,29 +63,32 @@ interface FollowToggleSmallType {
 
 export default function FollowToggleSmall({
   isAdmin,
-  followed,
   userId,
 }: FollowToggleSmallType) {
-  const [isFollowed, setIsFollwed] = useState(false);
+  const [isFollowed, setIsFollowed] = useState(false);
   const [followUserId, setFollowUserId] = useRecoilState(followedUserIds);
   const [showModal, setShowModal] = useState<boolean>(false);
-  const [flag, setFlag] = useState<boolean>(true);
   const isToken = sessionStorage.getItem("jwtToken");
 
-  const createFollow = useMutation(() => followUser(userId!));
-  const deleteFollow = useMutation(() => deleteFollowUser(userId!));
+  const createFollow = useMutation(() => followUser(userId!), {
+    onSuccess: () => {
+      setIsFollowed(true);
+      setFollowUserId((prev) => [...prev, userId!]);
+    },
+  });
+  const deleteFollow = useMutation(() => deleteFollowUser(userId!), {
+    onSuccess: () => {
+      setIsFollowed(false);
+      setFollowUserId((prev) => prev.filter((id) => id !== userId!));
+    },
+  });
 
   const handleOnClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isToken) {
-      if (createFollow.isLoading || deleteFollow.isLoading) return;
       if (isFollowed) {
         deleteFollow.mutate();
-        setIsFollwed(false);
-        setFollowUserId(followUserId.filter((el) => el !== userId!));
       } else {
         createFollow.mutate();
-        setIsFollwed(true);
-        setFollowUserId([...followUserId, userId!]);
       }
     } else {
       setShowModal(true);
@@ -93,27 +96,10 @@ export default function FollowToggleSmall({
   };
 
   useEffect(() => {
-    if (flag) {
-      if (followed) {
-        if (followUserId.find((el) => el === userId!) === undefined)
-          setFollowUserId([...followUserId!, userId!]);
-      }
-      setIsFollwed(followed);
-      setFlag(false);
-    }
-  }, [followed, followUserId, flag, setFlag, userId, setFollowUserId]);
-
-  useEffect(() => {
-    if (!flag) {
-      if (followUserId.find((el) => el === userId!) !== undefined)
-        setIsFollwed(true);
-      else setIsFollwed(false);
-    }
-  }, [followUserId, setIsFollwed, userId, flag]);
-
-  useEffect(() => {
-    console.log(followUserId);
-  }, [followUserId]);
+    if (followUserId.find((el) => el === userId!) !== undefined)
+      setIsFollowed(true);
+    else setIsFollowed(false);
+  }, [followUserId, userId]);
 
   return (
     <div>

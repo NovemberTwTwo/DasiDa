@@ -39,11 +39,23 @@ function FeedListPage() {
     useState<CategoryState>(initialState);
 
   const { isSuccess, data } = useQuery(
-    [FEEDS, selectedCategory, currentUserId],
+    [FEEDS, selectedCategory],
     currentUserId && isToken ? getFeedListAuthorized : getFeedList,
     {
-      refetchOnWindowFocus: false,
-      refetchOnMount: true,
+      onSuccess: (data) => {
+        if (isToken) {
+          setFollowedUsers([]);
+          data.forEach(
+            ({ userId, followed }) =>
+              followed &&
+              setFollowedUsers((prev) => {
+                if (prev.filter((id) => id !== userId))
+                  return [...prev, userId];
+                return [...prev];
+              })
+          );
+        }
+      },
     }
   );
 
@@ -67,10 +79,6 @@ function FeedListPage() {
     )
       setSelectedCategory(initialState);
   }, [selectedCategory, data]);
-
-  useEffect(() => {
-    setFollowedUsers([]);
-  }, [setFollowedUsers, data]);
 
   return (
     <PageWrap>
